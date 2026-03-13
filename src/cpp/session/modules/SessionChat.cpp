@@ -231,6 +231,72 @@ bool isPositAiWanted()
    return isChatProviderPosit() || isPaiSelected();
 }
 
+// ============================================================================
+// BYOK (Bring Your Own Key) provider helpers
+// ============================================================================
+
+// Returns true if the given provider string is a BYOK provider
+bool isByokProvider(const std::string& provider)
+{
+   return provider == kChatProviderAnthropic ||
+          provider == kChatProviderOpenai ||
+          provider == kChatProviderGoogleGemini;
+}
+
+// Resolve the API key for a BYOK provider, checking user state first,
+// then falling back to environment variables
+std::string resolveByokApiKey(const std::string& provider)
+{
+   std::string key;
+   if (provider == kChatProviderAnthropic)
+   {
+      key = prefs::userState().anthropicApiKey();
+      if (key.empty())
+         key = core::system::getenv("ANTHROPIC_API_KEY");
+   }
+   else if (provider == kChatProviderOpenai)
+   {
+      key = prefs::userState().openaiApiKey();
+      if (key.empty())
+         key = core::system::getenv("OPENAI_API_KEY");
+   }
+   else if (provider == kChatProviderGoogleGemini)
+   {
+      key = prefs::userState().googleGeminiApiKey();
+      if (key.empty())
+      {
+         key = core::system::getenv("GOOGLE_API_KEY");
+         if (key.empty())
+            key = core::system::getenv("GEMINI_API_KEY");
+      }
+   }
+   return key;
+}
+
+// Resolve the model name for a BYOK provider from user preferences
+std::string resolveByokModel(const std::string& provider)
+{
+   if (provider == kChatProviderAnthropic)
+      return prefs::userPrefs().anthropicModel();
+   else if (provider == kChatProviderOpenai)
+      return prefs::userPrefs().openaiModel();
+   else if (provider == kChatProviderGoogleGemini)
+      return prefs::userPrefs().googleGeminiModel();
+   return "";
+}
+
+// Resolve the API URL for a BYOK provider from user preferences
+std::string resolveByokApiUrl(const std::string& provider)
+{
+   if (provider == kChatProviderAnthropic)
+      return prefs::userPrefs().anthropicApiUrl();
+   else if (provider == kChatProviderOpenai)
+      return prefs::userPrefs().openaiApiUrl();
+   else if (provider == kChatProviderGoogleGemini)
+      return prefs::userPrefs().googleGeminiApiUrl();
+   return "";
+}
+
 // Selective imports from chat modules to avoid namespace pollution
 namespace chat_constants = rstudio::session::modules::chat::constants;
 namespace chat_types = rstudio::session::modules::chat::types;
@@ -4689,6 +4755,154 @@ Error startChatBackend(bool resumeConversation)
    if (s_chatBackendPid != -1)
       return Success();
 
+   // Check if a BYOK provider is selected for the chat pane
+   std::string chatProvider = getConfiguredChatProvider();
+   if (isByokProvider(chatProvider))
+   {
+      // Check admin controls
+      if (!session::options().allowByokProviders())
+      {
+         LOG_ERROR_MESSAGE("BYOK providers are disabled by the administrator");
+         return Success();
+      }
+
+      std::string apiKey = resolveByokApiKey(chatProvider);
+      if (apiKey.empty())
+      {
+         LOG_ERROR_MESSAGE("No API key configured for BYOK provider: " + chatProvider);
+         return Success();
+      }
+
+      std::string model = resolveByokModel(chatProvider);
+      std::string apiUrl = resolveByokApiUrl(chatProvider);
+
+      // Find Node.js
+      core::FilePath nodePath;
+      if (!session::options().byokNodePath().isEmpty())
+      {
+         nodePath = session::options().byokNodePath();
+      }
+      else
+      {
+         Error error = node_tools::findNode(&nodePath, "rstudio.positAi.nodeBinaryPath");
+         if (error)
+            return error;
+      }
+
+      // Build BYOK service path (bundled with RStudio resources)
+      core::FilePath byokServicePath =
+         options().rResourcesPath().getParent().completeChildPath("ai-providers/dist/main.js");
+      if (!byokServicePath.exists())
+      {
+         return systemError(boost::system::errc::no_such_file_or_directory,
+                           "BYOK service not found: " + byokServicePath.getAbsolutePath(),
+                           ERROR_LOCATION);
+      }
+
+      // Allocate a free port
+      Error error = allocatePort(&s_chatBackendPort);
+      if (error)
+         return error;
+
+      // Share the port with the static file handler for CSP connect-src
+      staticfiles::setChatBackendPort(s_chatBackendPort);
+
+      // Generate per-session auth token for WebSocket authentication
+      s_chatBackendAuthToken = core::system::generateUuid(false);
+
+      DLOG("Allocated port {} for BYOK chat backend (provider={})", s_chatBackendPort, chatProvider);
+
+      // Build command arguments
+      std::vector<std::string> args;
+      args.push_back(byokServicePath.getAbsolutePath());
+      args.push_back("--mode");
+      args.push_back("chat");
+      args.push_back("--port");
+      args.push_back(boost::lexical_cast<std::string>(s_chatBackendPort));
+      args.push_back("--provider");
+      args.push_back(chatProvider);
+      args.push_back("--model");
+      args.push_back(model);
+      if (!apiUrl.empty())
+      {
+         args.push_back("--api-url");
+         args.push_back(apiUrl);
+      }
+
+      // Set up environment
+      core::system::Options environment;
+      core::system::environment(&environment);
+
+      // Pass per-session auth token for WebSocket authentication
+      core::system::setenv(&environment, "RSTUDIO_CHAT_AUTH_TOKEN", s_chatBackendAuthToken);
+
+      // Pass API key via environment variable (not command line)
+      core::system::setenv(&environment, "RSTUDIO_BYOK_API_KEY", apiKey);
+
+      // Enable Node.js proxy support for fetch()
+      core::system::setenv(&environment, "NODE_USE_ENV_PROXY", "1");
+
+      // Set NODE_EXTRA_CA_CERTS if a custom certificates file is provided
+      std::string certificatesFile =
+         session::options().positAssistantSslCertificatesFile();
+      if (!certificatesFile.empty())
+         core::system::setenv(&environment, "NODE_EXTRA_CA_CERTS", certificatesFile);
+
+#ifdef _WIN32
+      core::system::setHomeToUserProfile(&environment);
+#endif
+
+      // Set up callbacks
+      core::system::ProcessCallbacks callbacks;
+      callbacks.onStarted = [](core::system::ProcessOperations& ops) {
+         s_chatBackendPid = ops.getPid();
+         s_chatBackendOps = ops.shared_from_this();
+         DLOG("BYOK chat backend started with PID: {}", s_chatBackendPid);
+      };
+      callbacks.onStdout = onBackendStdout;
+      callbacks.onStderr = onBackendStderr;
+      callbacks.onExit = onBackendExit;
+
+      // Process options
+      core::system::ProcessOptions processOpts;
+      processOpts.allowParentSuspend = true;
+      processOpts.exitWithParent = true;
+      processOpts.callbacksRequireMainThread = true;
+      processOpts.reportHasSubprocs = false;
+#ifndef _WIN32
+      processOpts.detachSession = true;
+#else
+      processOpts.detachProcess = true;
+#endif
+      processOpts.workingDir = byokServicePath.getParent();
+      processOpts.environment = environment;
+
+      // Log execution details
+      std::string argsStr = boost::algorithm::join(args, " ");
+      DLOG("Launching BYOK chat backend: nodePath={}, args=[{}], workingDir={}",
+           nodePath.getAbsolutePath(),
+           argsStr,
+           processOpts.workingDir.getAbsolutePath());
+
+      // Launch via ProcessSupervisor
+      error = processSupervisor().runProgram(
+          nodePath.getAbsolutePath(),
+          args,
+          processOpts,
+          callbacks);
+
+      if (error)
+      {
+         error.addProperty("description",
+            "Failed to launch BYOK chat backend: node=" +
+            nodePath.getAbsolutePath() + ", provider=" + chatProvider);
+         clearChatBackendPort();
+         return error;
+      }
+
+      return Success();
+   }
+
    // Locate installation
    FilePath positAiPath = locatePositAiInstallation();
    if (positAiPath.isEmpty())
@@ -5087,6 +5301,16 @@ Error chatNotifyUILoaded(const json::JsonRpcRequest& request,
 Error chatGetVersion(const json::JsonRpcRequest& request,
                      json::JsonRpcResponse* pResponse)
 {
+   // BYOK providers don't have version management
+   std::string provider = getConfiguredChatProvider();
+   if (isByokProvider(provider))
+   {
+      json::Object result;
+      result["notApplicable"] = true;
+      pResponse->setResult(result);
+      return Success();
+   }
+
    // Return empty string if version not yet received (backend never started)
    // Return "unknown" if backend started but didn't provide version
    // Otherwise return the actual version string
@@ -5097,6 +5321,16 @@ Error chatGetVersion(const json::JsonRpcRequest& request,
 Error chatCheckForUpdates(const json::JsonRpcRequest& request,
                           json::JsonRpcResponse* pResponse)
 {
+   // BYOK providers don't have update management
+   std::string provider = getConfiguredChatProvider();
+   if (isByokProvider(provider))
+   {
+      json::Object result;
+      result["notApplicable"] = true;
+      pResponse->setResult(result);
+      return Success();
+   }
+
    // Perform on-demand update check if state hasn't been populated yet.
    // This happens when user selects Posit AI in Preferences before the pref is saved.
    // We allow the check regardless of isPositAiWanted() since checking for available
@@ -5138,6 +5372,16 @@ Error chatCheckForUpdates(const json::JsonRpcRequest& request,
 Error chatInstallUpdate(const json::JsonRpcRequest& request,
                         json::JsonRpcResponse* pResponse)
 {
+   // BYOK providers don't have update management
+   std::string provider = getConfiguredChatProvider();
+   if (isByokProvider(provider))
+   {
+      json::Object result;
+      result["notApplicable"] = true;
+      pResponse->setResult(result);
+      return Success();
+   }
+
    if (!isPositAiWanted())
    {
       return systemError(boost::system::errc::operation_not_permitted,
@@ -5310,6 +5554,16 @@ Error chatInstallUpdate(const json::JsonRpcRequest& request,
 Error chatGetUpdateStatus(const json::JsonRpcRequest& request,
                           json::JsonRpcResponse* pResponse)
 {
+   // BYOK providers don't have update management
+   std::string provider = getConfiguredChatProvider();
+   if (isByokProvider(provider))
+   {
+      json::Object result;
+      result["notApplicable"] = true;
+      pResponse->setResult(result);
+      return Success();
+   }
+
    boost::mutex::scoped_lock lock(s_updateStateMutex);
 
    if (!isPositAiWanted())
@@ -5349,6 +5603,36 @@ Error chatGetUpdateStatus(const json::JsonRpcRequest& request,
       result["error"] = s_updateState.errorMessage;
    }
 
+   pResponse->setResult(result);
+   return Success();
+}
+
+// ============================================================================
+// BYOK connection test
+// ============================================================================
+
+Error byokTestConnection(const json::JsonRpcRequest& request,
+                          json::JsonRpcResponse* pResponse)
+{
+   std::string provider, apiKey, model, apiUrl;
+   Error error = json::readParams(request.params, &provider, &apiKey, &model, &apiUrl);
+   if (error)
+      return error;
+
+   if (apiKey.empty())
+      apiKey = resolveByokApiKey(provider);
+
+   if (apiKey.empty())
+   {
+      pResponse->setError(json::errc::ParamMissing, "No API key provided");
+      return Success();
+   }
+
+   // v1: Validate key is set. Actual API validation happens on first use.
+   json::Object result;
+   result["success"] = true;
+   result["provider"] = provider;
+   result["model"] = model;
    pResponse->setResult(result);
    return Success();
 }
@@ -5650,6 +5934,7 @@ Error initialize()
       (bind(registerRpcMethod, "chat_get_update_status", chatGetUpdateStatus))
       (bind(registerRpcMethod, "chat_doc_focused", chatDocFocused))
       (bind(registerRpcMethod, "chat_notify_ui_loaded", chatNotifyUILoaded))
+      (bind(registerRpcMethod, "byok_test_connection", byokTestConnection))
       (bind(registerUriHandler, "/ai-chat", handleAIChatRequest))
       (bind(sourceModuleRFile, "SessionChat.R"))
       ;
