@@ -1008,6 +1008,21 @@
             "description": "Use the test manifest URL for Posit AI package updates."
          }
       ],
+      "byok": [
+         {
+            "name": "allow-byok-providers",
+            "type": "bool",
+            "memberName": "allowByokProviders_",
+            "defaultValue": true,
+            "description": "Indicates whether users can configure their own AI provider API keys (Anthropic, OpenAI, Google Gemini)."
+         },
+         {
+            "name": "byok-node-path",
+            "type": "core::FilePath",
+            "memberName": "byokNodePath_",
+            "description": "The path to a Node.js binary to use for BYOK AI provider processes. If empty, uses the default Node.js discovery."
+         }
+      ],
       "misc": [
          
       ]
