@@ -142,6 +142,51 @@ public class PaiUtil
       return userPrefs_.chatProvider().getGlobalValue();
    }
 
+   /**
+    * Returns true if a BYOK (Bring Your Own Key) provider is the configured chat provider.
+    *
+    * @return true if the chat provider is Anthropic, OpenAI, or Google Gemini
+    */
+   public boolean isChatProviderByok()
+   {
+      String provider = getConfiguredChatProvider();
+      return provider.equals(UserPrefsAccessor.CHAT_PROVIDER_ANTHROPIC) ||
+             provider.equals(UserPrefsAccessor.CHAT_PROVIDER_OPENAI) ||
+             provider.equals(UserPrefsAccessor.CHAT_PROVIDER_GOOGLE_GEMINI);
+   }
+
+   /**
+    * Returns true if a BYOK (Bring Your Own Key) provider is the configured assistant.
+    *
+    * @return true if the assistant is Anthropic, OpenAI, or Google Gemini
+    */
+   public boolean isAssistantByok()
+   {
+      String assistant = getConfiguredAssistant();
+      return assistant.equals(UserPrefsAccessor.ASSISTANT_ANTHROPIC) ||
+             assistant.equals(UserPrefsAccessor.ASSISTANT_OPENAI) ||
+             assistant.equals(UserPrefsAccessor.ASSISTANT_GOOGLE_GEMINI);
+   }
+
+   /**
+    * Returns a human-readable display name for the configured chat provider.
+    *
+    * @return Display name for the chat provider, or empty string if unknown
+    */
+   public String getChatProviderDisplayName()
+   {
+      String provider = getConfiguredChatProvider();
+      if (provider.equals(UserPrefsAccessor.CHAT_PROVIDER_ANTHROPIC))
+         return "Claude (Anthropic)";
+      if (provider.equals(UserPrefsAccessor.CHAT_PROVIDER_OPENAI))
+         return "GPT (OpenAI)";
+      if (provider.equals(UserPrefsAccessor.CHAT_PROVIDER_GOOGLE_GEMINI))
+         return "Gemini (Google)";
+      if (provider.equals(UserPrefsAccessor.CHAT_PROVIDER_POSIT))
+         return "Posit Assistant";
+      return "";
+   }
+
    private final Session session_;
    private final UserPrefs userPrefs_;
    private RProjectAssistantOptions projectOptions_;
