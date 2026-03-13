@@ -19,3 +19,6 @@ cmake_minimum_required(VERSION 3.6.3)
 if(RSTUDIO_ELECTRON AND NOT RSTUDIO_DEVELOPMENT)
    add_subdirectory(desktop)
 endif()
+
+# BYOK AI providers service (built for both Desktop and Server)
+add_subdirectory(ai-providers)
