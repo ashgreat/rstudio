@@ -179,6 +179,7 @@ core::ProgramStatus Options::read(int argc, char * const argv[], std::ostream& o
    optionsDesc.commandLine.add(user);
    optionsDesc.commandLine.add(pai);
    optionsDesc.commandLine.add(copilot);
+   optionsDesc.commandLine.add(byok);
    optionsDesc.commandLine.add(misc);
 
    // define groups included in config-file processing
@@ -195,6 +196,7 @@ core::ProgramStatus Options::read(int argc, char * const argv[], std::ostream& o
    optionsDesc.configFile.add(user);
    optionsDesc.configFile.add(pai);
    optionsDesc.configFile.add(copilot);
+   optionsDesc.configFile.add(byok);
    optionsDesc.configFile.add(misc);
 
    // read configuration
