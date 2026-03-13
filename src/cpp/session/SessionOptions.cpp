@@ -147,15 +147,16 @@ core::ProgramStatus Options::read(int argc, char * const argv[], std::ostream& o
    options_description user("user");
    options_description pai("pai");
    options_description copilot("copilot");
+   options_description byok("byok");
    options_description misc("misc");
-   
+
    std::string saveActionDefault;
    int sameSite;
    std::string sessionPortRange;
 
    program_options::OptionsDescription optionsDesc =
          buildOptions(&automation, &tests, &script, &verify, &version, &program, &log, &docs, &www,
-                      &session, &allow, &r, &limits, &external, &git, &user, &pai, &copilot, &misc,
+                      &session, &allow, &r, &limits, &external, &git, &user, &copilot, &pai, &byok, &misc,
                       &saveActionDefault, &sameSite, &sessionPortRange);
 
    addOverlayOptions(&misc);

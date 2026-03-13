@@ -179,6 +179,7 @@ ProgramStatus Options::read(int argc,
    options_description rsession("rsession");
    options_description database("database");
    options_description auth("auth");
+   options_description byok("byok");
    options_description monitor("monitor");
    options_description databricks("databricks");
    options_description userProvisioning("userProvisioning");
@@ -190,7 +191,7 @@ ProgramStatus Options::read(int argc,
    std::string sameSite;
 
    program_options::OptionsDescription optionsDesc =
-         buildOptions(&automation, &verify, &server, &www, &rsession, &database, &auth, &monitor,
+         buildOptions(&automation, &verify, &server, &www, &rsession, &database, &auth, &byok, &monitor,
                       &sameSite, &wwwAllowedOrigins, &authLoginPageHtml, &authRdpLoginPageHtml,
                       &authMinimumUserId);
 
