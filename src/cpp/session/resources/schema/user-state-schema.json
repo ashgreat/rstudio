@@ -395,6 +395,24 @@
             },
             "title": "Posit Assistant State",
             "description": "State related to the Posit Assistant feature."
+        },
+        "anthropic_api_key": {
+            "type": "string",
+            "default": "",
+            "title": "Anthropic API Key",
+            "description": "API key for Anthropic. Falls back to ANTHROPIC_API_KEY environment variable if empty."
+        },
+        "openai_api_key": {
+            "type": "string",
+            "default": "",
+            "title": "OpenAI API Key",
+            "description": "API key for OpenAI. Falls back to OPENAI_API_KEY environment variable if empty."
+        },
+        "google_gemini_api_key": {
+            "type": "string",
+            "default": "",
+            "title": "Google Gemini API Key",
+            "description": "API key for Google Gemini. Falls back to GOOGLE_API_KEY or GEMINI_API_KEY environment variable if empty."
         }
     }
 }
