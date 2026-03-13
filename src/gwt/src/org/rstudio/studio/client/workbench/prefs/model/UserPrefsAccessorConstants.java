@@ -2166,6 +2166,12 @@ public interface UserPrefsAccessorConstants extends Constants {
    String assistantEnum_posit();
    @DefaultStringValue("GitHub Copilot")
    String assistantEnum_copilot();
+   @DefaultStringValue("Anthropic (Claude)")
+   String assistantEnum_anthropic();
+   @DefaultStringValue("OpenAI (GPT)")
+   String assistantEnum_openai();
+   @DefaultStringValue("Google Gemini")
+   String assistantEnum_google_gemini();
 
    /**
     * Select which AI assistant to use for chat functionality.
@@ -2178,6 +2184,12 @@ public interface UserPrefsAccessorConstants extends Constants {
    String chatProviderEnum_none();
    @DefaultStringValue("Posit Assistant")
    String chatProviderEnum_posit();
+   @DefaultStringValue("Anthropic (Claude)")
+   String chatProviderEnum_anthropic();
+   @DefaultStringValue("OpenAI (GPT)")
+   String chatProviderEnum_openai();
+   @DefaultStringValue("Google Gemini")
+   String chatProviderEnum_google_gemini();
 
    /**
     * Control when code suggestions are displayed in the editor.
@@ -2242,6 +2254,54 @@ public interface UserPrefsAccessorConstants extends Constants {
    String assistantShowMessagesTitle();
    @DefaultStringValue("When enabled, RStudio will show messages from the Posit AI assistant in a message box.")
    String assistantShowMessagesDescription();
+
+   /**
+    * The Anthropic model to use for AI assistance. Use model aliases (e.g. claude-sonnet-4) or specific versions (e.g. claude-sonnet-4-20250514).
+    */
+   @DefaultStringValue("Anthropic Model")
+   String anthropicModelTitle();
+   @DefaultStringValue("The Anthropic model to use for AI assistance. Use model aliases (e.g. claude-sonnet-4) or specific versions (e.g. claude-sonnet-4-20250514).")
+   String anthropicModelDescription();
+
+   /**
+    * The OpenAI model to use for AI assistance.
+    */
+   @DefaultStringValue("OpenAI Model")
+   String openaiModelTitle();
+   @DefaultStringValue("The OpenAI model to use for AI assistance.")
+   String openaiModelDescription();
+
+   /**
+    * The Google Gemini model to use for AI assistance.
+    */
+   @DefaultStringValue("Google Gemini Model")
+   String googleGeminiModelTitle();
+   @DefaultStringValue("The Google Gemini model to use for AI assistance.")
+   String googleGeminiModelDescription();
+
+   /**
+    * Base URL for the Anthropic API. Change for proxy or compatible endpoints.
+    */
+   @DefaultStringValue("Anthropic API URL")
+   String anthropicApiUrlTitle();
+   @DefaultStringValue("Base URL for the Anthropic API. Change for proxy or compatible endpoints.")
+   String anthropicApiUrlDescription();
+
+   /**
+    * Base URL for the OpenAI API. Change for Azure OpenAI, local models, or compatible endpoints.
+    */
+   @DefaultStringValue("OpenAI API URL")
+   String openaiApiUrlTitle();
+   @DefaultStringValue("Base URL for the OpenAI API. Change for Azure OpenAI, local models, or compatible endpoints.")
+   String openaiApiUrlDescription();
+
+   /**
+    * Base URL override for the Google Gemini API. Leave empty for the default endpoint.
+    */
+   @DefaultStringValue("Google Gemini API URL")
+   String googleGeminiApiUrlTitle();
+   @DefaultStringValue("Base URL override for the Google Gemini API. Leave empty for the default endpoint.")
+   String googleGeminiApiUrlDescription();
 
    /**
     * When enabled, RStudio will use GitHub Copilot to provide code suggestions.

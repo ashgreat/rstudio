@@ -445,9 +445,15 @@ namespace prefs {
 #define kAssistantNone "none"
 #define kAssistantPosit "posit"
 #define kAssistantCopilot "copilot"
+#define kAssistantAnthropic "anthropic"
+#define kAssistantOpenai "openai"
+#define kAssistantGoogleGemini "google-gemini"
 #define kChatProvider "chat_provider"
 #define kChatProviderNone "none"
 #define kChatProviderPosit "posit"
+#define kChatProviderAnthropic "anthropic"
+#define kChatProviderOpenai "openai"
+#define kChatProviderGoogleGemini "google-gemini"
 #define kAssistantCompletionsTrigger "assistant_completions_trigger"
 #define kAssistantCompletionsTriggerAuto "auto"
 #define kAssistantCompletionsTriggerManual "manual"
@@ -459,6 +465,12 @@ namespace prefs {
 #define kAssistantNesEnabled "assistant_nes_enabled"
 #define kAssistantNesAutoshow "assistant_nes_autoshow"
 #define kAssistantShowMessages "assistant_show_messages"
+#define kAnthropicModel "anthropic_model"
+#define kOpenaiModel "openai_model"
+#define kGoogleGeminiModel "google_gemini_model"
+#define kAnthropicApiUrl "anthropic_api_url"
+#define kOpenaiApiUrl "openai_api_url"
+#define kGoogleGeminiApiUrl "google_gemini_api_url"
 #define kCopilotEnabled "copilot_enabled"
 #define kCopilotCompletionsTrigger "copilot_completions_trigger"
 #define kCopilotCompletionsTriggerAuto "auto"
@@ -2097,6 +2109,42 @@ public:
     */
    bool assistantShowMessages();
    core::Error setAssistantShowMessages(bool val);
+
+   /**
+    * The Anthropic model to use for AI assistance. Use model aliases (e.g. claude-sonnet-4) or specific versions (e.g. claude-sonnet-4-20250514).
+    */
+   std::string anthropicModel();
+   core::Error setAnthropicModel(std::string val);
+
+   /**
+    * The OpenAI model to use for AI assistance.
+    */
+   std::string openaiModel();
+   core::Error setOpenaiModel(std::string val);
+
+   /**
+    * The Google Gemini model to use for AI assistance.
+    */
+   std::string googleGeminiModel();
+   core::Error setGoogleGeminiModel(std::string val);
+
+   /**
+    * Base URL for the Anthropic API. Change for proxy or compatible endpoints.
+    */
+   std::string anthropicApiUrl();
+   core::Error setAnthropicApiUrl(std::string val);
+
+   /**
+    * Base URL for the OpenAI API. Change for Azure OpenAI, local models, or compatible endpoints.
+    */
+   std::string openaiApiUrl();
+   core::Error setOpenaiApiUrl(std::string val);
+
+   /**
+    * Base URL override for the Google Gemini API. Leave empty for the default endpoint.
+    */
+   std::string googleGeminiApiUrl();
+   core::Error setGoogleGeminiApiUrl(std::string val);
 
    /**
     * When enabled, RStudio will use GitHub Copilot to provide code suggestions.

@@ -74,6 +74,9 @@ public class UserStateAccessor extends Prefs
    public static final String ZOTERO_DATA_DIR = "zotero_data_dir";
    public static final String QUARTO_WEBSITE_SYNC_EDITOR = "quarto_website_sync_editor";
    public static final String POSIT_ASSISTANT = "posit_assistant";
+   public static final String ANTHROPIC_API_KEY = "anthropic_api_key"; // pragma: allowlist secret
+   public static final String OPENAI_API_KEY = "openai_api_key"; // pragma: allowlist secret
+   public static final String GOOGLE_GEMINI_API_KEY = "google_gemini_api_key"; // pragma: allowlist secret
 
    /**
     * 
@@ -733,6 +736,42 @@ public class UserStateAccessor extends Prefs
 
    }
 
+   /**
+    * API key for Anthropic. Falls back to ANTHROPIC_API_KEY environment variable if empty.
+    */
+   public PrefValue<String> anthropicApiKey()
+   {
+      return string(
+         "anthropic_api_key",
+         _constants.anthropicApiKeyTitle(), 
+         _constants.anthropicApiKeyDescription(), 
+         "");
+   }
+
+   /**
+    * API key for OpenAI. Falls back to OPENAI_API_KEY environment variable if empty.
+    */
+   public PrefValue<String> openaiApiKey()
+   {
+      return string(
+         "openai_api_key",
+         _constants.openaiApiKeyTitle(), 
+         _constants.openaiApiKeyDescription(), 
+         "");
+   }
+
+   /**
+    * API key for Google Gemini. Falls back to GOOGLE_API_KEY or GEMINI_API_KEY environment variable if empty.
+    */
+   public PrefValue<String> googleGeminiApiKey()
+   {
+      return string(
+         "google_gemini_api_key",
+         _constants.googleGeminiApiKeyTitle(), 
+         _constants.googleGeminiApiKeyDescription(), 
+         "");
+   }
+
    public void syncPrefs(String layer, JsObject source)
    {
       if (source.hasKey("general"))
@@ -797,6 +836,12 @@ public class UserStateAccessor extends Prefs
          quartoWebsiteSyncEditor().setValue(layer, source.getBool("quarto_website_sync_editor"));
       if (source.hasKey("posit_assistant"))
          positAssistant().setValue(layer, source.getObject("posit_assistant"));
+      if (source.hasKey("anthropic_api_key"))
+         anthropicApiKey().setValue(layer, source.getString("anthropic_api_key"));
+      if (source.hasKey("openai_api_key"))
+         openaiApiKey().setValue(layer, source.getString("openai_api_key"));
+      if (source.hasKey("google_gemini_api_key"))
+         googleGeminiApiKey().setValue(layer, source.getString("google_gemini_api_key"));
    }
    public List<PrefValue<?>> allPrefs()
    {
@@ -832,6 +877,9 @@ public class UserStateAccessor extends Prefs
       prefs.add(zoteroDataDir());
       prefs.add(quartoWebsiteSyncEditor());
       prefs.add(positAssistant());
+      prefs.add(anthropicApiKey());
+      prefs.add(openaiApiKey());
+      prefs.add(googleGeminiApiKey());
       return prefs;
    }
    

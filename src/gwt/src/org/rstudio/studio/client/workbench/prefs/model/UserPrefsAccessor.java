@@ -311,6 +311,12 @@ public class UserPrefsAccessor extends Prefs
    public static final String ASSISTANT_NES_ENABLED = "assistant_nes_enabled";
    public static final String ASSISTANT_NES_AUTOSHOW = "assistant_nes_autoshow";
    public static final String ASSISTANT_SHOW_MESSAGES = "assistant_show_messages";
+   public static final String ANTHROPIC_MODEL = "anthropic_model";
+   public static final String OPENAI_MODEL = "openai_model";
+   public static final String GOOGLE_GEMINI_MODEL = "google_gemini_model";
+   public static final String ANTHROPIC_API_URL = "anthropic_api_url";
+   public static final String OPENAI_API_URL = "openai_api_url";
+   public static final String GOOGLE_GEMINI_API_URL = "google_gemini_api_url";
    public static final String COPILOT_ENABLED = "copilot_enabled";
    public static final String COPILOT_COMPLETIONS_TRIGGER = "copilot_completions_trigger";
    public static final String COPILOT_COMPLETIONS_DELAY = "copilot_completions_delay";
@@ -3988,19 +3994,28 @@ public class UserPrefsAccessor extends Prefs
          new String[] {
             ASSISTANT_NONE,
             ASSISTANT_POSIT,
-            ASSISTANT_COPILOT
+            ASSISTANT_COPILOT,
+            ASSISTANT_ANTHROPIC,
+            ASSISTANT_OPENAI,
+            ASSISTANT_GOOGLE_GEMINI
          },
          "posit",
          new String[] {
             _constants.assistantEnum_none(),
             _constants.assistantEnum_posit(),
-            _constants.assistantEnum_copilot()
+            _constants.assistantEnum_copilot(),
+            _constants.assistantEnum_anthropic(),
+            _constants.assistantEnum_openai(),
+            _constants.assistantEnum_google_gemini()
          });
    }
 
    public final static String ASSISTANT_NONE = "none";
    public final static String ASSISTANT_POSIT = "posit";
    public final static String ASSISTANT_COPILOT = "copilot";
+   public final static String ASSISTANT_ANTHROPIC = "anthropic";
+   public final static String ASSISTANT_OPENAI = "openai";
+   public final static String ASSISTANT_GOOGLE_GEMINI = "google-gemini";
 
    /**
     * Select which AI assistant to use for chat functionality.
@@ -4013,17 +4028,26 @@ public class UserPrefsAccessor extends Prefs
          _constants.chatProviderDescription(), 
          new String[] {
             CHAT_PROVIDER_NONE,
-            CHAT_PROVIDER_POSIT
+            CHAT_PROVIDER_POSIT,
+            CHAT_PROVIDER_ANTHROPIC,
+            CHAT_PROVIDER_OPENAI,
+            CHAT_PROVIDER_GOOGLE_GEMINI
          },
          "posit",
          new String[] {
             _constants.chatProviderEnum_none(),
-            _constants.chatProviderEnum_posit()
+            _constants.chatProviderEnum_posit(),
+            _constants.chatProviderEnum_anthropic(),
+            _constants.chatProviderEnum_openai(),
+            _constants.chatProviderEnum_google_gemini()
          });
    }
 
    public final static String CHAT_PROVIDER_NONE = "none";
    public final static String CHAT_PROVIDER_POSIT = "posit";
+   public final static String CHAT_PROVIDER_ANTHROPIC = "anthropic";
+   public final static String CHAT_PROVIDER_OPENAI = "openai";
+   public final static String CHAT_PROVIDER_GOOGLE_GEMINI = "google-gemini";
 
    /**
     * Control when code suggestions are displayed in the editor.
@@ -4129,6 +4153,78 @@ public class UserPrefsAccessor extends Prefs
          _constants.assistantShowMessagesTitle(), 
          _constants.assistantShowMessagesDescription(), 
          true);
+   }
+
+   /**
+    * The Anthropic model to use for AI assistance. Use model aliases (e.g. claude-sonnet-4) or specific versions (e.g. claude-sonnet-4-20250514).
+    */
+   public PrefValue<String> anthropicModel()
+   {
+      return string(
+         "anthropic_model",
+         _constants.anthropicModelTitle(), 
+         _constants.anthropicModelDescription(), 
+         "claude-sonnet-4");
+   }
+
+   /**
+    * The OpenAI model to use for AI assistance.
+    */
+   public PrefValue<String> openaiModel()
+   {
+      return string(
+         "openai_model",
+         _constants.openaiModelTitle(), 
+         _constants.openaiModelDescription(), 
+         "gpt-4o");
+   }
+
+   /**
+    * The Google Gemini model to use for AI assistance.
+    */
+   public PrefValue<String> googleGeminiModel()
+   {
+      return string(
+         "google_gemini_model",
+         _constants.googleGeminiModelTitle(), 
+         _constants.googleGeminiModelDescription(), 
+         "gemini-2.5-pro");
+   }
+
+   /**
+    * Base URL for the Anthropic API. Change for proxy or compatible endpoints.
+    */
+   public PrefValue<String> anthropicApiUrl()
+   {
+      return string(
+         "anthropic_api_url",
+         _constants.anthropicApiUrlTitle(), 
+         _constants.anthropicApiUrlDescription(), 
+         "https://api.anthropic.com");
+   }
+
+   /**
+    * Base URL for the OpenAI API. Change for Azure OpenAI, local models, or compatible endpoints.
+    */
+   public PrefValue<String> openaiApiUrl()
+   {
+      return string(
+         "openai_api_url",
+         _constants.openaiApiUrlTitle(), 
+         _constants.openaiApiUrlDescription(), 
+         "https://api.openai.com/v1");
+   }
+
+   /**
+    * Base URL override for the Google Gemini API. Leave empty for the default endpoint.
+    */
+   public PrefValue<String> googleGeminiApiUrl()
+   {
+      return string(
+         "google_gemini_api_url",
+         _constants.googleGeminiApiUrlTitle(), 
+         _constants.googleGeminiApiUrlDescription(), 
+         "");
    }
 
    /**
@@ -4947,6 +5043,18 @@ public class UserPrefsAccessor extends Prefs
          assistantNesAutoshow().setValue(layer, source.getBool("assistant_nes_autoshow"));
       if (source.hasKey("assistant_show_messages"))
          assistantShowMessages().setValue(layer, source.getBool("assistant_show_messages"));
+      if (source.hasKey("anthropic_model"))
+         anthropicModel().setValue(layer, source.getString("anthropic_model"));
+      if (source.hasKey("openai_model"))
+         openaiModel().setValue(layer, source.getString("openai_model"));
+      if (source.hasKey("google_gemini_model"))
+         googleGeminiModel().setValue(layer, source.getString("google_gemini_model"));
+      if (source.hasKey("anthropic_api_url"))
+         anthropicApiUrl().setValue(layer, source.getString("anthropic_api_url"));
+      if (source.hasKey("openai_api_url"))
+         openaiApiUrl().setValue(layer, source.getString("openai_api_url"));
+      if (source.hasKey("google_gemini_api_url"))
+         googleGeminiApiUrl().setValue(layer, source.getString("google_gemini_api_url"));
       if (source.hasKey("copilot_enabled"))
          copilotEnabled().setValue(layer, source.getBool("copilot_enabled"));
       if (source.hasKey("copilot_completions_trigger"))
@@ -5254,6 +5362,12 @@ public class UserPrefsAccessor extends Prefs
       prefs.add(assistantNesEnabled());
       prefs.add(assistantNesAutoshow());
       prefs.add(assistantShowMessages());
+      prefs.add(anthropicModel());
+      prefs.add(openaiModel());
+      prefs.add(googleGeminiModel());
+      prefs.add(anthropicApiUrl());
+      prefs.add(openaiApiUrl());
+      prefs.add(googleGeminiApiUrl());
       prefs.add(copilotEnabled());
       prefs.add(copilotCompletionsTrigger());
       prefs.add(copilotCompletionsDelay());

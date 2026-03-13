@@ -59,6 +59,7 @@ protected:
                 boost::program_options::options_description* pUser,
                 boost::program_options::options_description* pCopilot,
                 boost::program_options::options_description* pPai,
+                boost::program_options::options_description* pByok,
                 boost::program_options::options_description* pMisc,
                 std::string* pSaveActionDefault,
                 int* wwwSameSite,
@@ -493,6 +494,14 @@ protected:
       value<bool>(&positAssistantTestManifest_)->default_value(false)->implicit_value(true),
       "Use the test manifest URL for Posit AI package updates.");
 
+   pByok->add_options()
+      ("allow-byok-providers",
+      value<bool>(&allowByokProviders_)->default_value(true),
+      "Indicates whether users can configure their own AI provider API keys (Anthropic, OpenAI, Google Gemini).")
+      ("byok-node-path",
+      value<std::string>(&byokNodePath_)->default_value(std::string()),
+      "The path to a Node.js binary to use for BYOK AI provider processes. If empty, uses the default Node.js discovery.");
+
    pMisc->add_options();
 
    FilePath defaultConfigPath = core::system::xdg::findSystemConfigFile("rsession configuration", "rsession.conf");
@@ -630,6 +639,8 @@ public:
    std::string positAssistantSslCertificatesFile() const { return positAssistantSslCertificatesFile_; }
    core::FilePath positAssistantHelper() const { return core::FilePath(positAssistantHelper_); }
    bool positAssistantTestManifest() const { return positAssistantTestManifest_; }
+   bool allowByokProviders() const { return allowByokProviders_; }
+   core::FilePath byokNodePath() const { return core::FilePath(byokNodePath_); }
 
 
 protected:
@@ -763,6 +774,8 @@ protected:
    std::string positAssistantSslCertificatesFile_;
    std::string positAssistantHelper_;
    bool positAssistantTestManifest_;
+   bool allowByokProviders_;
+   std::string byokNodePath_;
    virtual bool allowOverlay() const { return false; };
 };
 

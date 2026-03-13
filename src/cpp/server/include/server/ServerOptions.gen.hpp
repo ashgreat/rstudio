@@ -52,6 +52,7 @@ protected:
                 boost::program_options::options_description* pRsession,
                 boost::program_options::options_description* pDatabase,
                 boost::program_options::options_description* pAuth,
+                boost::program_options::options_description* pByok,
                 boost::program_options::options_description* pMonitor,
                 std::string* wwwSameSite,
                 std::vector<std::string>* pWwwAllowedOrigins,
@@ -244,6 +245,11 @@ protected:
       value<bool>(&authCookiesForceSecure_)->default_value(false),
       "Indicates whether or not auth cookies should be forcefully marked as secure. This should be enabled if running an SSL terminator in front of RStudio Server. Otherwise, cookies will be marked secure if SSL is configured.");
 
+   pByok->add_options()
+      ("allow-byok-providers",
+      value<bool>(&allowByokProviders_)->default_value(true),
+      "When false, prevents users from configuring their own AI provider API keys. The BYOK provider options will not appear in the preferences UI.");
+
    pMonitor->add_options()
       (kMonitorIntervalSeconds,
       value<int>(&monitorIntervalSeconds_)->default_value(60),
@@ -304,6 +310,7 @@ public:
    int authSignInThrottleSeconds() const { return authSignInThrottleSeconds_; }
    core::FilePath authRevocationListDir() const { return core::FilePath(authRevocationListDir_); }
    bool authCookiesForceSecure() const { return authCookiesForceSecure_; }
+   bool allowByokProviders() const { return allowByokProviders_; }
    int monitorIntervalSeconds() const { return monitorIntervalSeconds_; }
 
 
@@ -364,6 +371,7 @@ protected:
    int authSignInThrottleSeconds_;
    std::string authRevocationListDir_;
    bool authCookiesForceSecure_;
+   bool allowByokProviders_;
    int monitorIntervalSeconds_;
    virtual bool allowOverlay() const { return false; };
 };

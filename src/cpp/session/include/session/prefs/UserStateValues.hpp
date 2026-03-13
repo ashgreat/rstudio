@@ -114,6 +114,9 @@ namespace prefs {
 #define kPositAssistant "posit_assistant"
 #define kPositAssistantLastUpdateCheck "lastUpdateCheck"
 #define kPositAssistantRstudioVersionChecked "rstudioVersionChecked"
+#define kAnthropicApiKey "anthropic_api_key"
+#define kOpenaiApiKey "openai_api_key"
+#define kGoogleGeminiApiKey "google_gemini_api_key"
 
 class UserStateValues: public Preferences
 {
@@ -305,6 +308,24 @@ public:
     */
    core::json::Object positAssistant();
    core::Error setPositAssistant(core::json::Object val);
+
+   /**
+    * API key for Anthropic. Falls back to ANTHROPIC_API_KEY environment variable if empty.
+    */
+   std::string anthropicApiKey();
+   core::Error setAnthropicApiKey(std::string val);
+
+   /**
+    * API key for OpenAI. Falls back to OPENAI_API_KEY environment variable if empty.
+    */
+   std::string openaiApiKey();
+   core::Error setOpenaiApiKey(std::string val);
+
+   /**
+    * API key for Google Gemini. Falls back to GOOGLE_API_KEY or GEMINI_API_KEY environment variable if empty.
+    */
+   std::string googleGeminiApiKey();
+   core::Error setGoogleGeminiApiKey(std::string val);
 
 };
 

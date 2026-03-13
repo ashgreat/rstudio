@@ -426,6 +426,45 @@ core::Error UserStateValues::setPositAssistant(core::json::Object val)
    return writePref("posit_assistant", val);
 }
 
+/**
+ * API key for Anthropic. Falls back to ANTHROPIC_API_KEY environment variable if empty.
+ */
+std::string UserStateValues::anthropicApiKey()
+{
+   return readPref<std::string>("anthropic_api_key");
+}
+
+core::Error UserStateValues::setAnthropicApiKey(std::string val)
+{
+   return writePref("anthropic_api_key", val);
+}
+
+/**
+ * API key for OpenAI. Falls back to OPENAI_API_KEY environment variable if empty.
+ */
+std::string UserStateValues::openaiApiKey()
+{
+   return readPref<std::string>("openai_api_key");
+}
+
+core::Error UserStateValues::setOpenaiApiKey(std::string val)
+{
+   return writePref("openai_api_key", val);
+}
+
+/**
+ * API key for Google Gemini. Falls back to GOOGLE_API_KEY or GEMINI_API_KEY environment variable if empty.
+ */
+std::string UserStateValues::googleGeminiApiKey()
+{
+   return readPref<std::string>("google_gemini_api_key");
+}
+
+core::Error UserStateValues::setGoogleGeminiApiKey(std::string val)
+{
+   return writePref("google_gemini_api_key", val);
+}
+
 std::vector<std::string> UserStateValues::allKeys()
 {
    return std::vector<std::string>({
@@ -460,6 +499,9 @@ std::vector<std::string> UserStateValues::allKeys()
       kZoteroDataDir,
       kQuartoWebsiteSyncEditor,
       kPositAssistant,
+      kAnthropicApiKey,
+      kOpenaiApiKey,
+      kGoogleGeminiApiKey,
    });
 }
 

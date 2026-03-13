@@ -3495,6 +3495,84 @@ core::Error UserPrefValues::setAssistantShowMessages(bool val)
 }
 
 /**
+ * The Anthropic model to use for AI assistance. Use model aliases (e.g. claude-sonnet-4) or specific versions (e.g. claude-sonnet-4-20250514).
+ */
+std::string UserPrefValues::anthropicModel()
+{
+   return readPref<std::string>("anthropic_model");
+}
+
+core::Error UserPrefValues::setAnthropicModel(std::string val)
+{
+   return writePref("anthropic_model", val);
+}
+
+/**
+ * The OpenAI model to use for AI assistance.
+ */
+std::string UserPrefValues::openaiModel()
+{
+   return readPref<std::string>("openai_model");
+}
+
+core::Error UserPrefValues::setOpenaiModel(std::string val)
+{
+   return writePref("openai_model", val);
+}
+
+/**
+ * The Google Gemini model to use for AI assistance.
+ */
+std::string UserPrefValues::googleGeminiModel()
+{
+   return readPref<std::string>("google_gemini_model");
+}
+
+core::Error UserPrefValues::setGoogleGeminiModel(std::string val)
+{
+   return writePref("google_gemini_model", val);
+}
+
+/**
+ * Base URL for the Anthropic API. Change for proxy or compatible endpoints.
+ */
+std::string UserPrefValues::anthropicApiUrl()
+{
+   return readPref<std::string>("anthropic_api_url");
+}
+
+core::Error UserPrefValues::setAnthropicApiUrl(std::string val)
+{
+   return writePref("anthropic_api_url", val);
+}
+
+/**
+ * Base URL for the OpenAI API. Change for Azure OpenAI, local models, or compatible endpoints.
+ */
+std::string UserPrefValues::openaiApiUrl()
+{
+   return readPref<std::string>("openai_api_url");
+}
+
+core::Error UserPrefValues::setOpenaiApiUrl(std::string val)
+{
+   return writePref("openai_api_url", val);
+}
+
+/**
+ * Base URL override for the Google Gemini API. Leave empty for the default endpoint.
+ */
+std::string UserPrefValues::googleGeminiApiUrl()
+{
+   return readPref<std::string>("google_gemini_api_url");
+}
+
+core::Error UserPrefValues::setGoogleGeminiApiUrl(std::string val)
+{
+   return writePref("google_gemini_api_url", val);
+}
+
+/**
  * When enabled, RStudio will use GitHub Copilot to provide code suggestions.
  */
 bool UserPrefValues::copilotEnabled()
@@ -3998,6 +4076,12 @@ std::vector<std::string> UserPrefValues::allKeys()
       kAssistantNesEnabled,
       kAssistantNesAutoshow,
       kAssistantShowMessages,
+      kAnthropicModel,
+      kOpenaiModel,
+      kGoogleGeminiModel,
+      kAnthropicApiUrl,
+      kOpenaiApiUrl,
+      kGoogleGeminiApiUrl,
       kCopilotEnabled,
       kCopilotCompletionsTrigger,
       kCopilotCompletionsDelay,

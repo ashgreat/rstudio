@@ -2492,6 +2492,63 @@
    clear = function() { .rs.clearUserPref("assistant_show_messages") }
 )
 
+# Anthropic Model
+#
+# The Anthropic model to use for AI assistance. Use model aliases (e.g.
+# claude-sonnet-4) or specific versions (e.g. claude-sonnet-4-20250514).
+.rs.uiPrefs$anthropicModel <- list(
+   get = function() { .rs.getUserPref("anthropic_model") },
+   set = function(value) { .rs.setUserPref("anthropic_model", value) },
+   clear = function() { .rs.clearUserPref("anthropic_model") }
+)
+
+# OpenAI Model
+#
+# The OpenAI model to use for AI assistance.
+.rs.uiPrefs$openaiModel <- list(
+   get = function() { .rs.getUserPref("openai_model") },
+   set = function(value) { .rs.setUserPref("openai_model", value) },
+   clear = function() { .rs.clearUserPref("openai_model") }
+)
+
+# Google Gemini Model
+#
+# The Google Gemini model to use for AI assistance.
+.rs.uiPrefs$googleGeminiModel <- list(
+   get = function() { .rs.getUserPref("google_gemini_model") },
+   set = function(value) { .rs.setUserPref("google_gemini_model", value) },
+   clear = function() { .rs.clearUserPref("google_gemini_model") }
+)
+
+# Anthropic API URL
+#
+# Base URL for the Anthropic API. Change for proxy or compatible endpoints.
+.rs.uiPrefs$anthropicApiUrl <- list(
+   get = function() { .rs.getUserPref("anthropic_api_url") },
+   set = function(value) { .rs.setUserPref("anthropic_api_url", value) },
+   clear = function() { .rs.clearUserPref("anthropic_api_url") }
+)
+
+# OpenAI API URL
+#
+# Base URL for the OpenAI API. Change for Azure OpenAI, local models, or
+# compatible endpoints.
+.rs.uiPrefs$openaiApiUrl <- list(
+   get = function() { .rs.getUserPref("openai_api_url") },
+   set = function(value) { .rs.setUserPref("openai_api_url", value) },
+   clear = function() { .rs.clearUserPref("openai_api_url") }
+)
+
+# Google Gemini API URL
+#
+# Base URL override for the Google Gemini API. Leave empty for the default
+# endpoint.
+.rs.uiPrefs$googleGeminiApiUrl <- list(
+   get = function() { .rs.getUserPref("google_gemini_api_url") },
+   set = function(value) { .rs.setUserPref("google_gemini_api_url", value) },
+   clear = function() { .rs.clearUserPref("google_gemini_api_url") }
+)
+
 # Enable GitHub Copilot
 #
 # When enabled, RStudio will use GitHub Copilot to provide code suggestions.

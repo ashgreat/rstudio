@@ -271,6 +271,30 @@ public interface UserStateAccessorConstants extends Constants {
    @DefaultStringValue("State related to the Posit Assistant feature.")
    String positAssistantDescription();
 
+   /**
+    * API key for Anthropic. Falls back to ANTHROPIC_API_KEY environment variable if empty.
+    */
+   @DefaultStringValue("Anthropic API Key")
+   String anthropicApiKeyTitle();
+   @DefaultStringValue("API key for Anthropic. Falls back to ANTHROPIC_API_KEY environment variable if empty.")
+   String anthropicApiKeyDescription();
+
+   /**
+    * API key for OpenAI. Falls back to OPENAI_API_KEY environment variable if empty.
+    */
+   @DefaultStringValue("OpenAI API Key")
+   String openaiApiKeyTitle();
+   @DefaultStringValue("API key for OpenAI. Falls back to OPENAI_API_KEY environment variable if empty.")
+   String openaiApiKeyDescription();
+
+   /**
+    * API key for Google Gemini. Falls back to GOOGLE_API_KEY or GEMINI_API_KEY environment variable if empty.
+    */
+   @DefaultStringValue("Google Gemini API Key")
+   String googleGeminiApiKeyTitle();
+   @DefaultStringValue("API key for Google Gemini. Falls back to GOOGLE_API_KEY or GEMINI_API_KEY environment variable if empty.")
+   String googleGeminiApiKeyDescription();
+
 
 
 }
