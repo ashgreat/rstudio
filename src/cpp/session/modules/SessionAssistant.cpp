@@ -1327,7 +1327,6 @@ Error startAgent(const std::string& assistantType = "")
       args.push_back(byokServicePath.getAbsolutePath());
       args.push_back("--mode");
       args.push_back("completions");
-      args.push_back("--stdio");
       args.push_back("--provider");
       args.push_back(assistant);
       args.push_back("--model");

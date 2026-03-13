@@ -111,9 +111,18 @@ public class AssistantPreferencesPane extends PreferencesPane
 
       // Save BYOK provider settings
       // API keys are saved to UserState (not UserPrefs) for security
-      userState_.anthropicApiKey().setGlobalValue(anthropicApiKeyField_.getText());
-      userState_.openaiApiKey().setGlobalValue(openaiApiKeyField_.getText());
-      userState_.googleGeminiApiKey().setGlobalValue(geminiApiKeyField_.getText());
+      // Only save non-empty values to preserve existing keys when field is hidden/empty
+      String anthropicKey = anthropicApiKeyField_.getText();
+      if (anthropicKey != null && !anthropicKey.isEmpty())
+         userState_.anthropicApiKey().setGlobalValue(anthropicKey);
+
+      String openaiKey = openaiApiKeyField_.getText();
+      if (openaiKey != null && !openaiKey.isEmpty())
+         userState_.openaiApiKey().setGlobalValue(openaiKey);
+
+      String geminiKey = geminiApiKeyField_.getText();
+      if (geminiKey != null && !geminiKey.isEmpty())
+         userState_.googleGeminiApiKey().setGlobalValue(geminiKey);
 
       // Models and URLs are saved to UserPrefs
       prefs.anthropicModel().setGlobalValue(anthropicModelField_.getText());

@@ -7,10 +7,12 @@ import type {
 export class GeminiProvider implements AIProvider {
   private genAI: GoogleGenerativeAI;
   private model: string;
+  private apiUrl?: string;
 
-  constructor(apiKey: string, model: string, _apiUrl?: string) {
+  constructor(apiKey: string, model: string, apiUrl?: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = model;
+    this.apiUrl = apiUrl || undefined;
   }
 
   async chat(
@@ -22,10 +24,11 @@ export class GeminiProvider implements AIProvider {
     const systemMsg = messages.find(m => m.role === "system");
     const nonSystemMsgs = messages.filter(m => m.role !== "system");
 
+    const requestOptions = this.apiUrl ? { baseUrl: this.apiUrl } : undefined;
     const generativeModel = this.genAI.getGenerativeModel({
       model: this.model,
       systemInstruction: systemMsg ? (typeof systemMsg.content === "string" ? systemMsg.content : "") : undefined,
-    });
+    }, requestOptions);
 
     const geminiTools: Tool[] = tools.length > 0 ? [{
       functionDeclarations: tools.map(t => ({
@@ -83,11 +86,12 @@ export class GeminiProvider implements AIProvider {
       ? "\n\nVariables in scope:\n" + variables.map(v => `- ${v.name}: ${v.description}`).join("\n")
       : "";
 
+    const requestOptions = this.apiUrl ? { baseUrl: this.apiUrl } : undefined;
     const model = this.genAI.getGenerativeModel({
       model: this.model,
       systemInstruction: `Output ONLY code to insert. No markdown, no explanation, no backticks. Language: ${language}. Match the existing style exactly.`,
       generationConfig: { temperature: 0, maxOutputTokens: 200 },
-    });
+    }, requestOptions);
 
     const result = await model.generateContent(`[PREFIX]${prefix}[CURSOR]${suffix}[SUFFIX]${varContext}`);
     const text = result.response.text();

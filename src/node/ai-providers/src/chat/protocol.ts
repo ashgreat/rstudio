@@ -154,9 +154,10 @@ export class ProtocolHandler {
   }
 
   private async chatWithRetry(signal: AbortSignal): Promise<ChatResponse> {
-    const MAX_RETRIES = 3;
     const BACKOFF_MS = [2000, 4000, 8000];
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt <= BACKOFF_MS.length; attempt++) {
       try {
         return await this.provider.chat(
           this.conversation.getMessages(),
@@ -166,7 +167,8 @@ export class ProtocolHandler {
         );
       } catch (e: unknown) {
         const error = e as Error & { status?: number };
-        if (error.status === 429 && attempt < MAX_RETRIES) {
+        lastError = error;
+        if (error.status === 429 && attempt < BACKOFF_MS.length) {
           this.sendNotification("chat/streamContent", {
             content: `\n_Rate limited. Retrying in ${BACKOFF_MS[attempt] / 1000}s..._\n`,
           });
@@ -176,7 +178,7 @@ export class ProtocolHandler {
         throw e;
       }
     }
-    throw new Error("Unreachable");
+    throw lastError || new Error("All retries exhausted");
   }
 
   private sendToolRequest(method: string, params: Record<string, unknown>): Promise<unknown> {

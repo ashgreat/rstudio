@@ -126,16 +126,11 @@ export class OpenAIProvider implements AIProvider {
 
   private toOpenAIToolResultMessages(blocks: ContentBlock[]): OpenAI.ChatCompletionMessageParam[] {
     const results: OpenAI.ChatCompletionMessageParam[] = [];
-    const textParts: string[] = [];
     for (const b of blocks) {
       if (b.type === "tool_result") {
         results.push({ role: "tool", tool_call_id: b.tool_use_id!, content: b.content || "" });
-      } else if (b.type === "text") {
-        textParts.push(b.text || "");
       }
-    }
-    if (textParts.length > 0) {
-      results.unshift({ role: "user", content: textParts.join("") });
+      // Drop text blocks that appear alongside tool results
     }
     return results;
   }

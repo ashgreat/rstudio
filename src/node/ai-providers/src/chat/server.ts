@@ -21,7 +21,7 @@ export function startChatServer(
     res.end();
   });
 
-  const wss = new WebSocketServer({ server, path: "/ai-chat" });
+  const wss = new WebSocketServer({ server, path: "/ai-chat/ws" });
 
   wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
     const url = new URL(req.url || "/", `http://127.0.0.1:${port}`);
