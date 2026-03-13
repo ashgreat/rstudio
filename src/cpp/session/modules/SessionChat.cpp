@@ -5624,7 +5624,9 @@ Error byokTestConnection(const json::JsonRpcRequest& request,
 
    if (apiKey.empty())
    {
-      pResponse->setError(json::errc::ParamMissing, "No API key provided");
+      pResponse->setError(
+            boost::system::errc::make_error_code(boost::system::errc::invalid_argument),
+            json::Value("No API key provided"));
       return Success();
    }
 
