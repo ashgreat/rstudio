@@ -273,8 +273,8 @@ public class ChatPresenter extends BasePresenter
                   return;
                }
 
-               // Don't poll for backend if Posit AI isn't selected as chat provider
-               if (!paiUtil_.isChatProviderPosit())
+               // Don't poll for backend if no supported chat provider is selected
+               if (!paiUtil_.isChatProviderPosit() && !paiUtil_.isChatProviderByok())
                {
                   display_.setStatus(Display.Status.ASSISTANT_NOT_SELECTED);
                   return;
@@ -657,6 +657,18 @@ public class ChatPresenter extends BasePresenter
          initializing_ = true;
          checkForUpdates();
       }
+      else if (paiUtil_.isChatProviderByok())
+      {
+         // Prevent concurrent initialization
+         if (initializing_)
+         {
+            return;
+         }
+
+         // BYOK provider selected - skip installation checks, start backend directly
+         initializing_ = true;
+         startBackend();
+      }
       else
       {
          // If popped out, close the satellite first
@@ -669,7 +681,7 @@ public class ChatPresenter extends BasePresenter
             display_.hidePoppedOutPlaceholder();
          }
 
-         // Posit AI is not the effective chat provider, stop backend and show not-selected message
+         // No supported chat provider selected, stop backend and show not-selected message
          initializing_ = false;  // Cancel any ongoing initialization
          stopBackend();
          display_.hideReadlineNotification();
@@ -695,8 +707,8 @@ public class ChatPresenter extends BasePresenter
          return;
       }
 
-      // Check if Posit AI is selected as chat provider before initializing
-      if (!paiUtil_.isChatProviderPosit())
+      // Check if a supported chat provider is selected before initializing
+      if (!paiUtil_.isChatProviderPosit() && !paiUtil_.isChatProviderByok())
       {
          cancelPopOut();
          display_.setStatus(Display.Status.ASSISTANT_NOT_SELECTED);
@@ -704,14 +716,23 @@ public class ChatPresenter extends BasePresenter
       }
 
       initializing_ = true;
-      checkForUpdates();
+
+      // BYOK providers skip installation checks - start backend directly
+      if (paiUtil_.isChatProviderByok())
+      {
+         startBackend();
+      }
+      else
+      {
+         checkForUpdates();
+      }
    }
 
    private void startBackend()
    {
       // Re-check preference before starting (guards against provider change
       // during the async update check)
-      if (!paiUtil_.isChatProviderPosit())
+      if (!paiUtil_.isChatProviderPosit() && !paiUtil_.isChatProviderByok())
       {
          initializing_ = false;
          cancelPopOut();
@@ -1013,7 +1034,7 @@ public class ChatPresenter extends BasePresenter
    private void loadChatUI(String wsUrl, String authToken, boolean resumeChat)
    {
       // Re-check preference before loading (guards against preference change during polling)
-      if (!paiUtil_.isChatProviderPosit())
+      if (!paiUtil_.isChatProviderPosit() && !paiUtil_.isChatProviderByok())
       {
          initializing_ = false;
          cancelPopOut();
