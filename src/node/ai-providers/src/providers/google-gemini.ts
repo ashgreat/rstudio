@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, type Content, type Part, type Tool } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Content, type FunctionDeclaration, type Part, type Tool } from "@google/generative-ai";
 import type {
   AIProvider, Message, ToolDefinition, ToolCall,
   ChatResponse, Variable, ContentBlock
@@ -31,8 +31,8 @@ export class GeminiProvider implements AIProvider {
       functionDeclarations: tools.map(t => ({
         name: t.name,
         description: t.description,
-        parameters: t.parameters as object,
-      })),
+        parameters: t.parameters,
+      }) as unknown as FunctionDeclaration),
     }] : [];
 
     const contents: Content[] = this.toGeminiContents(nonSystemMsgs);
