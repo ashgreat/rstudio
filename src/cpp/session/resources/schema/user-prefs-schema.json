@@ -1779,16 +1779,16 @@
         },
         "assistant": {
             "type": "string",
-            "enum": ["none", "posit", "copilot"],
-            "enumReadable": ["(None)", "Posit AI Next Edit Suggestions", "GitHub Copilot"],
+            "enum": ["none", "posit", "copilot", "anthropic", "openai", "google-gemini"],
+            "enumReadable": ["(None)", "Posit AI Next Edit Suggestions", "GitHub Copilot", "Anthropic (Claude)", "OpenAI (GPT)", "Google Gemini"],
             "default": "posit",
             "title": "AI Assistant",
             "description": "Select which AI assistant to use for code suggestions and assistance."
         },
         "chat_provider": {
             "type": "string",
-            "enum": ["none", "posit"],
-            "enumReadable": ["(None)", "Posit Assistant"],
+            "enum": ["none", "posit", "anthropic", "openai", "google-gemini"],
+            "enumReadable": ["(None)", "Posit Assistant", "Anthropic (Claude)", "OpenAI (GPT)", "Google Gemini"],
             "default": "posit",
             "title": "Chat Provider",
             "description": "Select which AI assistant to use for chat functionality."
@@ -1844,6 +1844,42 @@
             "default": true,
             "title": "Display account and billing messages from AI assistant",
             "description": "When enabled, RStudio will show messages from the Posit AI assistant in a message box."
+        },
+        "anthropic_model": {
+            "type": "string",
+            "default": "claude-sonnet-4",
+            "title": "Anthropic Model",
+            "description": "The Anthropic model to use for AI assistance. Use model aliases (e.g. claude-sonnet-4) or specific versions (e.g. claude-sonnet-4-20250514)."
+        },
+        "openai_model": {
+            "type": "string",
+            "default": "gpt-4o",
+            "title": "OpenAI Model",
+            "description": "The OpenAI model to use for AI assistance."
+        },
+        "google_gemini_model": {
+            "type": "string",
+            "default": "gemini-2.5-pro",
+            "title": "Google Gemini Model",
+            "description": "The Google Gemini model to use for AI assistance."
+        },
+        "anthropic_api_url": {
+            "type": "string",
+            "default": "https://api.anthropic.com",
+            "title": "Anthropic API URL",
+            "description": "Base URL for the Anthropic API. Change for proxy or compatible endpoints."
+        },
+        "openai_api_url": {
+            "type": "string",
+            "default": "https://api.openai.com/v1",
+            "title": "OpenAI API URL",
+            "description": "Base URL for the OpenAI API. Change for Azure OpenAI, local models, or compatible endpoints."
+        },
+        "google_gemini_api_url": {
+            "type": "string",
+            "default": "",
+            "title": "Google Gemini API URL",
+            "description": "Base URL override for the Google Gemini API. Leave empty for the default endpoint."
         },
         "copilot_enabled": {
             "type": "boolean",
