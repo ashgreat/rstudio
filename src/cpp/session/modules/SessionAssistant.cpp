@@ -46,6 +46,7 @@
 
 #include <session/projects/SessionProjects.hpp>
 #include <session/prefs/UserPrefs.hpp>
+#include <session/prefs/UserState.hpp>
 #include <session/SessionModuleContext.hpp>
 #include <session/SessionRUtil.hpp>
 
@@ -99,6 +100,67 @@ bool isPositAssistantAllowedByAdmin()
    return
       session::options().allowPositAssistant() &&
       session::options().positAssistantEnabled();
+}
+
+// ============================================================================
+// BYOK (Bring Your Own Key) provider helpers
+// ============================================================================
+
+bool isByokProvider(const std::string& provider)
+{
+   return provider == kAssistantAnthropic ||
+          provider == kAssistantOpenai ||
+          provider == kAssistantGoogleGemini;
+}
+
+std::string resolveByokApiKey(const std::string& provider)
+{
+   std::string key;
+   if (provider == kAssistantAnthropic)
+   {
+      key = prefs::userState().anthropicApiKey();
+      if (key.empty())
+         key = core::system::getenv("ANTHROPIC_API_KEY");
+   }
+   else if (provider == kAssistantOpenai)
+   {
+      key = prefs::userState().openaiApiKey();
+      if (key.empty())
+         key = core::system::getenv("OPENAI_API_KEY");
+   }
+   else if (provider == kAssistantGoogleGemini)
+   {
+      key = prefs::userState().googleGeminiApiKey();
+      if (key.empty())
+      {
+         key = core::system::getenv("GOOGLE_API_KEY");
+         if (key.empty())
+            key = core::system::getenv("GEMINI_API_KEY");
+      }
+   }
+   return key;
+}
+
+std::string resolveByokModel(const std::string& provider)
+{
+   if (provider == kAssistantAnthropic)
+      return prefs::userPrefs().anthropicModel();
+   else if (provider == kAssistantOpenai)
+      return prefs::userPrefs().openaiModel();
+   else if (provider == kAssistantGoogleGemini)
+      return prefs::userPrefs().googleGeminiModel();
+   return "";
+}
+
+std::string resolveByokApiUrl(const std::string& provider)
+{
+   if (provider == kAssistantAnthropic)
+      return prefs::userPrefs().anthropicApiUrl();
+   else if (provider == kAssistantOpenai)
+      return prefs::userPrefs().openaiApiUrl();
+   else if (provider == kAssistantGoogleGemini)
+      return prefs::userPrefs().googleGeminiApiUrl();
+   return "";
 }
 
 struct AssistantRequest
@@ -571,6 +633,17 @@ bool isAssistantEnabled(const std::string& assistantType = "")
          s_agentNotRunningReason = AgentNotRunningReason::DisabledByAdministrator;
          return false;
       }
+   }
+   else if (isByokProvider(assistant))
+   {
+      // BYOK providers check their own admin control and don't need
+      // the installation or version checks below (they're bundled).
+      if (!session::options().allowByokProviders())
+      {
+         s_agentNotRunningReason = AgentNotRunningReason::DisabledByAdministrator;
+         return false;
+      }
+      return true;
    }
 
    // Finally, check whether the selected assistant type is installed.
@@ -1191,6 +1264,204 @@ Error startAgent(const std::string& assistantType = "")
 
    // Determine effective assistant type
    std::string assistant = getConfiguredAssistantType(assistantType);
+
+   // Handle BYOK providers
+   if (isByokProvider(assistant))
+   {
+      if (!session::options().allowByokProviders())
+      {
+         ELOG("BYOK providers are disabled by the administrator");
+         setAgentRuntimeStatus(AgentRuntimeStatus::Unknown);
+         return Success();
+      }
+
+      std::string apiKey = resolveByokApiKey(assistant);
+      if (apiKey.empty())
+      {
+         ELOG("No API key configured for BYOK provider: {}", assistant);
+         setAgentRuntimeStatus(AgentRuntimeStatus::Unknown);
+         return Success();
+      }
+
+      std::string model = resolveByokModel(assistant);
+      std::string apiUrl = resolveByokApiUrl(assistant);
+
+      // Find Node.js
+      core::FilePath nodePath;
+      if (!session::options().byokNodePath().isEmpty())
+      {
+         nodePath = session::options().byokNodePath();
+      }
+      else
+      {
+         error = node_tools::findNode(&nodePath, "rstudio.copilot.nodeBinaryPath");
+         if (error)
+         {
+            ELOG("Failed to find node.js for BYOK provider: {}", error.getMessage());
+            setAgentRuntimeStatus(AgentRuntimeStatus::Unknown);
+            return error;
+         }
+      }
+
+      if (!nodePath.exists())
+      {
+         ELOG("node.js path '{}' does not exist.", nodePath.getAbsolutePath());
+         setAgentRuntimeStatus(AgentRuntimeStatus::Unknown);
+         return fileNotFoundError("node", ERROR_LOCATION);
+      }
+
+      DLOG("Using node.js at '{}' for BYOK assistant.", nodePath.getAbsolutePath());
+
+      // Build BYOK service path (bundled with RStudio resources)
+      core::FilePath byokServicePath =
+         session::options().rResourcesPath().getParent().completeChildPath("ai-providers/dist/main.js");
+      if (!byokServicePath.exists())
+      {
+         ELOG("BYOK service not found: {}", byokServicePath.getAbsolutePath());
+         setAgentRuntimeStatus(AgentRuntimeStatus::Unknown);
+         return fileNotFoundError(byokServicePath, ERROR_LOCATION);
+      }
+
+      // Build args for completions mode (stdio)
+      std::vector<std::string> args;
+      args.push_back(byokServicePath.getAbsolutePath());
+      args.push_back("--mode");
+      args.push_back("completions");
+      args.push_back("--stdio");
+      args.push_back("--provider");
+      args.push_back(assistant);
+      args.push_back("--model");
+      args.push_back(model);
+      if (!apiUrl.empty())
+      {
+         args.push_back("--api-url");
+         args.push_back(apiUrl);
+      }
+
+      // Set up environment
+      core::system::Options environment;
+      core::system::environment(&environment);
+      core::system::setenv(&environment, "RSTUDIO_BYOK_API_KEY", apiKey);
+      core::system::setenv(&environment, "NODE_USE_ENV_PROXY", "1");
+
+      // Set NODE_EXTRA_CA_CERTS if a custom certificates file is provided
+      std::string certificatesFile = session::options().copilotSslCertificatesFile();
+      if (!certificatesFile.empty())
+         environment.push_back(std::make_pair("NODE_EXTRA_CA_CERTS", certificatesFile));
+
+#ifdef _WIN32
+      core::system::setHomeToUserProfile(&environment);
+#endif
+
+      // Record which assistant type we're starting
+      s_runningAgentType = assistant;
+
+      // Set up process callbacks
+      core::system::ProcessCallbacks callbacks;
+      callbacks.onStarted = &agent::onStarted;
+      callbacks.onContinue = &agent::onContinue;
+      callbacks.onStdout = &agent::onStdout;
+      callbacks.onStderr = &agent::onStderr;
+      callbacks.onError = &agent::onError;
+      callbacks.onExit = &agent::onExit;
+
+      // Set up process options
+      core::system::ProcessOptions options;
+      options.allowParentSuspend = true;
+      options.exitWithParent = true;
+      options.callbacksRequireMainThread = true;
+      options.reportHasSubprocs = false;
+#ifndef _WIN32
+      options.detachSession = true;
+#else
+      options.detachProcess = true;
+#endif
+      options.workingDir = byokServicePath.getParent();
+      options.environment = environment;
+
+      DLOG("Launching BYOK assistant: provider={}, model={}", assistant, model);
+
+      error = module_context::processSupervisor().runProgram(
+               nodePath.getAbsolutePath(),
+               args,
+               options,
+               callbacks);
+
+      if (error)
+      {
+         ELOG("Failed to launch BYOK agent: {}", error.getMessage());
+         setAgentRuntimeStatus(AgentRuntimeStatus::Unknown);
+         return error;
+      }
+
+      // Wait for the process to start
+      s_agentStartupError = std::string();
+      waitFor([]() { return s_agentPid != -1; });
+      if (s_agentPid == -1)
+      {
+         ELOG("BYOK agent startup timed out [node='{}', stderr='{}'].",
+              nodePath.getAbsolutePath(), s_agentStartupError);
+         s_agentRuntimeStatus = AgentRuntimeStatus::Unknown;
+         s_runningAgentType.clear();
+         return Error(boost::system::errc::no_such_process, ERROR_LOCATION);
+      }
+
+      // Send an initialize request to the agent
+      json::Object clientInfoJson;
+      clientInfoJson["name"] = "RStudio";
+      clientInfoJson["version"] = RSTUDIO_VERSION;
+
+      json::Object initializationOptionsJson;
+      initializationOptionsJson["editorInfo"] = clientInfoJson;
+      initializationOptionsJson["editorPluginInfo"] = clientInfoJson;
+
+      json::Object paramsJson;
+      paramsJson["processId"] = ::getpid();
+      paramsJson["locale"] = prefs::userPrefs().uiLanguage();
+      paramsJson["initializationOptions"] = initializationOptionsJson;
+
+      std::string workspaceFolderURI = lsp::uriFromDocumentPath(projects::projectContext().directory());
+
+      json::Object workspaceJson;
+      workspaceJson["workspaceFolders"] = !workspaceFolderURI.empty();
+
+      json::Object capabilitiesJson;
+      capabilitiesJson["workspace"] = workspaceJson;
+      paramsJson["capabilities"] = capabilitiesJson;
+
+      if (!workspaceFolderURI.empty())
+      {
+         json::Object workspaceFolderJson;
+         workspaceFolderJson["uri"] = workspaceFolderURI;
+         json::Array workspaceFoldersJsonArray;
+         workspaceFoldersJsonArray.push_back(workspaceFolderJson);
+         paramsJson["workspaceFolders"] = workspaceFoldersJsonArray;
+      }
+
+      // set up continuation after we've finished initializing
+      auto initializedCallback = [=](const Error& error, json::JsonRpcResponse* pResponse)
+      {
+         if (error)
+         {
+            s_agentRuntimeStatus = AgentRuntimeStatus::Unknown;
+            LOG_ERROR(error);
+            return;
+         }
+
+         // Send the 'initialized' notification
+         sendNotification("initialized", json::Object());
+
+         // Sync currently open documents with the agent
+         syncOpenDocuments();
+
+         DLOG("BYOK agent initialized successfully (provider={})", assistant);
+      };
+
+      std::string requestId = core::system::generateUuid();
+      sendRequest("initialize", requestId, paramsJson, AssistantContinuation(initializedCallback));
+
+      return Success();
+   }
 
    // Create environment for agent process
    core::system::Options environment;
@@ -2308,6 +2579,19 @@ Error assistantSignIn(const json::JsonRpcRequest& request,
       return error;
    }
 
+   // BYOK providers use API keys, no sign-in needed
+   std::string assistant = getConfiguredAssistantType(assistantType);
+   if (isByokProvider(assistant))
+   {
+      json::JsonRpcResponse response;
+      json::Object resultJson;
+      resultJson["status"] = "OK";
+      resultJson["user"] = assistant + " (API Key)";
+      response.setResult(resultJson);
+      continuation(Success(), &response);
+      return Success();
+   }
+
    // Make sure assistant is running
    if (!ensureAgentRunning(assistantType))
    {
@@ -2335,6 +2619,18 @@ Error assistantSignOut(const json::JsonRpcRequest& request,
       return error;
    }
 
+   // BYOK providers use API keys, no sign-out needed
+   std::string assistant = getConfiguredAssistantType(assistantType);
+   if (isByokProvider(assistant))
+   {
+      json::JsonRpcResponse response;
+      json::Object resultJson;
+      resultJson["status"] = "OK";
+      response.setResult(resultJson);
+      continuation(Success(), &response);
+      return Success();
+   }
+
    // Make sure assistant is running
    if (!ensureAgentRunning(assistantType))
    {
@@ -2359,6 +2655,19 @@ Error assistantStatus(const json::JsonRpcRequest& request,
    {
       LOG_ERROR(error);
       return error;
+   }
+
+   // BYOK providers use API keys, return OK status
+   std::string assistant = getConfiguredAssistantType(assistantType);
+   if (isByokProvider(assistant))
+   {
+      json::JsonRpcResponse response;
+      json::Object resultJson;
+      resultJson["status"] = "OK";
+      resultJson["user"] = assistant + " (API Key)";
+      response.setResult(resultJson);
+      continuation(Success(), &response);
+      return Success();
    }
 
    // Make sure assistant is running
