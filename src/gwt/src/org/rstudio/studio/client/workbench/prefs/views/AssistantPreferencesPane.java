@@ -56,6 +56,7 @@ import org.rstudio.studio.client.workbench.prefs.PrefsConstants;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefs;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefsAccessor;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefsAccessorConstants;
+import org.rstudio.studio.client.workbench.prefs.model.UserState;
 import org.rstudio.studio.client.workbench.views.chat.PaiUtil;
 import org.rstudio.studio.client.workbench.views.chat.PositAiInstallManager;
 import org.rstudio.studio.client.workbench.views.chat.server.ChatServerOperations;
@@ -80,7 +81,9 @@ import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.PasswordTextBox;
 import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.inject.Inject;
 
@@ -106,6 +109,18 @@ public class AssistantPreferencesPane extends PreferencesPane
       prefs.copilotTabKeyBehavior().setGlobalValue(selAssistantTabKeyBehavior_.getValue());
       prefs.copilotCompletionsTrigger().setGlobalValue(selAssistantCompletionsTrigger_.getValue());
 
+      // Save BYOK provider settings
+      // API keys are saved to UserState (not UserPrefs) for security
+      userState_.anthropicApiKey().setGlobalValue(anthropicApiKeyField_.getText());
+      userState_.openaiApiKey().setGlobalValue(openaiApiKeyField_.getText());
+      userState_.googleGeminiApiKey().setGlobalValue(geminiApiKeyField_.getText());
+
+      // Models and URLs are saved to UserPrefs
+      prefs.anthropicModel().setGlobalValue(anthropicModelField_.getText());
+      prefs.openaiModel().setGlobalValue(openaiModelField_.getText());
+      prefs.googleGeminiModel().setGlobalValue(geminiModelField_.getText());
+      prefs.openaiApiUrl().setGlobalValue(openaiApiUrlField_.getText());
+
       return super.onApply(prefs);
    }
 
@@ -113,6 +128,7 @@ public class AssistantPreferencesPane extends PreferencesPane
    public AssistantPreferencesPane(EventBus events,
                                  Session session,
                                  UserPrefs prefs,
+                                 UserState userState,
                                  Commands commands,
                                  AriaLiveService ariaLive,
                                  Assistant assistant,
@@ -125,6 +141,7 @@ public class AssistantPreferencesPane extends PreferencesPane
       events_ = events;
       session_ = session;
       prefs_ = prefs;
+      userState_ = userState;
       commands_ = commands;
       assistant_ = assistant;
       server_ = server;
@@ -143,23 +160,35 @@ public class AssistantPreferencesPane extends PreferencesPane
          assistantLabels = new String[] {
                prefsConstants_.assistantEnum_none(),
                prefsConstants_.assistantEnum_posit(),
-               prefsConstants_.assistantEnum_copilot()
+               prefsConstants_.assistantEnum_copilot(),
+               prefsConstants_.assistantEnum_anthropic(),
+               prefsConstants_.assistantEnum_openai(),
+               prefsConstants_.assistantEnum_google_gemini()
          };
          assistantValues = new String[] {
                UserPrefsAccessor.ASSISTANT_NONE,
                UserPrefsAccessor.ASSISTANT_POSIT,
-               UserPrefsAccessor.ASSISTANT_COPILOT
+               UserPrefsAccessor.ASSISTANT_COPILOT,
+               UserPrefsAccessor.ASSISTANT_ANTHROPIC,
+               UserPrefsAccessor.ASSISTANT_OPENAI,
+               UserPrefsAccessor.ASSISTANT_GOOGLE_GEMINI
          };
       }
       else
       {
          assistantLabels = new String[] {
                prefsConstants_.assistantEnum_none(),
-               prefsConstants_.assistantEnum_copilot()
+               prefsConstants_.assistantEnum_copilot(),
+               prefsConstants_.assistantEnum_anthropic(),
+               prefsConstants_.assistantEnum_openai(),
+               prefsConstants_.assistantEnum_google_gemini()
          };
          assistantValues = new String[] {
                UserPrefsAccessor.ASSISTANT_NONE,
-               UserPrefsAccessor.ASSISTANT_COPILOT
+               UserPrefsAccessor.ASSISTANT_COPILOT,
+               UserPrefsAccessor.ASSISTANT_ANTHROPIC,
+               UserPrefsAccessor.ASSISTANT_OPENAI,
+               UserPrefsAccessor.ASSISTANT_GOOGLE_GEMINI
          };
       }
       selAssistant_ = new SelectWidget(
@@ -273,20 +302,32 @@ public class AssistantPreferencesPane extends PreferencesPane
       {
          chatProviderLabels = new String[] {
                prefsConstants_.chatProviderEnum_none(),
-               prefsConstants_.chatProviderEnum_posit()
+               prefsConstants_.chatProviderEnum_posit(),
+               prefsConstants_.chatProviderEnum_anthropic(),
+               prefsConstants_.chatProviderEnum_openai(),
+               prefsConstants_.chatProviderEnum_google_gemini()
          };
          chatProviderValues = new String[] {
                UserPrefsAccessor.CHAT_PROVIDER_NONE,
-               UserPrefsAccessor.CHAT_PROVIDER_POSIT
+               UserPrefsAccessor.CHAT_PROVIDER_POSIT,
+               UserPrefsAccessor.CHAT_PROVIDER_ANTHROPIC,
+               UserPrefsAccessor.CHAT_PROVIDER_OPENAI,
+               UserPrefsAccessor.CHAT_PROVIDER_GOOGLE_GEMINI
          };
       }
       else
       {
          chatProviderLabels = new String[] {
-               prefsConstants_.chatProviderEnum_none()
+               prefsConstants_.chatProviderEnum_none(),
+               prefsConstants_.chatProviderEnum_anthropic(),
+               prefsConstants_.chatProviderEnum_openai(),
+               prefsConstants_.chatProviderEnum_google_gemini()
          };
          chatProviderValues = new String[] {
-               UserPrefsAccessor.CHAT_PROVIDER_NONE
+               UserPrefsAccessor.CHAT_PROVIDER_NONE,
+               UserPrefsAccessor.CHAT_PROVIDER_ANTHROPIC,
+               UserPrefsAccessor.CHAT_PROVIDER_OPENAI,
+               UserPrefsAccessor.CHAT_PROVIDER_GOOGLE_GEMINI
          };
       }
       selChatProvider_ = new SelectWidget(
@@ -297,6 +338,35 @@ public class AssistantPreferencesPane extends PreferencesPane
             true,
             false);
       selChatProvider_.setValue(prefs_.chatProvider().getGlobalValue());
+
+      // BYOK provider configuration fields
+      anthropicApiKeyField_ = new PasswordTextBox();
+      anthropicApiKeyField_.setWidth("300px");
+      anthropicApiKeyField_.setText(userState_.anthropicApiKey().getGlobalValue());
+
+      openaiApiKeyField_ = new PasswordTextBox();
+      openaiApiKeyField_.setWidth("300px");
+      openaiApiKeyField_.setText(userState_.openaiApiKey().getGlobalValue());
+
+      geminiApiKeyField_ = new PasswordTextBox();
+      geminiApiKeyField_.setWidth("300px");
+      geminiApiKeyField_.setText(userState_.googleGeminiApiKey().getGlobalValue());
+
+      anthropicModelField_ = new TextBox();
+      anthropicModelField_.setWidth("300px");
+      anthropicModelField_.setText(prefs_.anthropicModel().getGlobalValue());
+
+      openaiModelField_ = new TextBox();
+      openaiModelField_.setWidth("300px");
+      openaiModelField_.setText(prefs_.openaiModel().getGlobalValue());
+
+      geminiModelField_ = new TextBox();
+      geminiModelField_.setWidth("300px");
+      geminiModelField_.setText(prefs_.googleGeminiModel().getGlobalValue());
+
+      openaiApiUrlField_ = new TextBox();
+      openaiApiUrlField_.setWidth("300px");
+      openaiApiUrlField_.setText(prefs_.openaiApiUrl().getGlobalValue());
 
       linkCopilotTos_ = new HelpLink(
             constants_.copilotTermsOfServiceLinkLabel(),
@@ -339,7 +409,35 @@ public class AssistantPreferencesPane extends PreferencesPane
       add(headerLabel(constants_.assistantChatTab()));
       add(selChatProvider_);
 
+      // BYOK provider configuration panels
+      byokAnthropicPanel_ = new VerticalPanel();
+      byokAnthropicPanel_.add(spaced(new Label(prefsConstants_.anthropicModelTitle())));
+      byokAnthropicPanel_.add(spaced(anthropicModelField_));
+      byokAnthropicPanel_.add(spaced(new Label(constants_.byokApiKeyLabel())));
+      byokAnthropicPanel_.add(spaced(anthropicApiKeyField_));
+      byokAnthropicPanel_.setVisible(false);
+      add(byokAnthropicPanel_);
+
+      byokOpenaiPanel_ = new VerticalPanel();
+      byokOpenaiPanel_.add(spaced(new Label(prefsConstants_.openaiModelTitle())));
+      byokOpenaiPanel_.add(spaced(openaiModelField_));
+      byokOpenaiPanel_.add(spaced(new Label(prefsConstants_.openaiApiUrlTitle())));
+      byokOpenaiPanel_.add(spaced(openaiApiUrlField_));
+      byokOpenaiPanel_.add(spaced(new Label(constants_.byokApiKeyLabel())));
+      byokOpenaiPanel_.add(spaced(openaiApiKeyField_));
+      byokOpenaiPanel_.setVisible(false);
+      add(byokOpenaiPanel_);
+
+      byokGeminiPanel_ = new VerticalPanel();
+      byokGeminiPanel_.add(spaced(new Label(prefsConstants_.googleGeminiModelTitle())));
+      byokGeminiPanel_.add(spaced(geminiModelField_));
+      byokGeminiPanel_.add(spaced(new Label(constants_.byokApiKeyLabel())));
+      byokGeminiPanel_.add(spaced(geminiApiKeyField_));
+      byokGeminiPanel_.setVisible(false);
+      add(byokGeminiPanel_);
+
       // Add change handler for chat provider to check for Posit AI installation
+      // and update BYOK field visibility
       selChatProvider_.addChangeHandler((event) ->
       {
          String value = selChatProvider_.getValue();
@@ -348,7 +446,11 @@ public class AssistantPreferencesPane extends PreferencesPane
             // Check for install/update/unsupported status
             checkPositAiInstallation(/* forAssistant= */ false);
          }
+         updateByokFieldVisibility();
       });
+
+      // Initialize BYOK field visibility
+      updateByokFieldVisibility();
 
       // Code suggestions section
       add(spacedBefore(headerLabel(constants_.assistantSuggestionsHeader())));
@@ -513,7 +615,11 @@ public class AssistantPreferencesPane extends PreferencesPane
          }
       };
 
-      selAssistant_.addChangeHandler(assistantChangedHandler);
+      selAssistant_.addChangeHandler((event) ->
+      {
+         assistantChangedHandler.onChange(event);
+         updateByokFieldVisibility();
+      });
       assistantChangedHandler.onChange(null); // Initialize
    }
 
@@ -1282,6 +1388,23 @@ public class AssistantPreferencesPane extends PreferencesPane
       }
    }
 
+   private void updateByokFieldVisibility()
+   {
+      String chatProvider = selChatProvider_.getValue();
+      String assistant = selAssistant_.getValue();
+
+      boolean showAnthropic = chatProvider.equals(UserPrefsAccessor.CHAT_PROVIDER_ANTHROPIC) ||
+                              assistant.equals(UserPrefsAccessor.ASSISTANT_ANTHROPIC);
+      boolean showOpenai = chatProvider.equals(UserPrefsAccessor.CHAT_PROVIDER_OPENAI) ||
+                           assistant.equals(UserPrefsAccessor.ASSISTANT_OPENAI);
+      boolean showGemini = chatProvider.equals(UserPrefsAccessor.CHAT_PROVIDER_GOOGLE_GEMINI) ||
+                           assistant.equals(UserPrefsAccessor.ASSISTANT_GOOGLE_GEMINI);
+
+      byokAnthropicPanel_.setVisible(showAnthropic);
+      byokOpenaiPanel_.setVisible(showOpenai);
+      byokGeminiPanel_.setVisible(showGemini);
+   }
+
    private void hideButtons()
    {
       for (SmallButton button : statusButtons_)
@@ -1367,10 +1490,23 @@ public class AssistantPreferencesPane extends PreferencesPane
    private final Label lblCopilotTos_;
    private final Label lblProjectOverride_;
 
+   // BYOK provider fields
+   private final PasswordTextBox anthropicApiKeyField_;
+   private final PasswordTextBox openaiApiKeyField_;
+   private final PasswordTextBox geminiApiKeyField_;
+   private final TextBox anthropicModelField_;
+   private final TextBox openaiModelField_;
+   private final TextBox geminiModelField_;
+   private final TextBox openaiApiUrlField_;
+   private VerticalPanel byokAnthropicPanel_;
+   private VerticalPanel byokOpenaiPanel_;
+   private VerticalPanel byokGeminiPanel_;
+
    // Injected
    private final EventBus events_;
    private final Session session_;
    private final UserPrefs prefs_;
+   private final UserState userState_;
    private final Commands commands_;
    private final Assistant assistant_;
    private final AssistantServerOperations server_;
